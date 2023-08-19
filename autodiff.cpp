@@ -1,10 +1,10 @@
 /*
-   一个支持多变量自动微分框架的原理代码，still too young too simple,sometimes naiive.
+   一个支持多变量自动微分框架的原理代码， still too young too simple, sometimes naiive.
    by Zhang X.G.
    School of Ins.
    Southeast University
 */
-#include<cstring>
+#include <cstring>
 #include <complex>
 #include <vector>
 using namespace std;

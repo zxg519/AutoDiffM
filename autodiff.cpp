@@ -168,7 +168,7 @@ int main()
 	dual x3{ 4, 2, 3 };    // 第2个变量，所以偏微分向量中第2个单元设置为1，其余单元必须设置为0
 
 	//dual y = 2*x1*x2*x3 + sin(x3)*cos(x3)*pow(x1, 2)/3 + 1/(x2 ^ 4);
-	dual y = x2*x3 + 1 / (x1 ^ 5);  //^优先级最低，一定要加括号！
+	dual y = x2*x3 + 1 / (x1 ^ 5);  //^优先级没有比*/等运算符高，所以一定要加括号！
 	cout << "f(x1,x2,x3)=" << y.get_value() << endl;
 	cout << "dy/dx1=" << y.get_diff(0) << endl;
 	cout << "dy/dx2=" << y.get_diff(1) << endl;

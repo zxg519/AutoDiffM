@@ -79,7 +79,7 @@ public:
 	}
 	friend dual operator - (const dual& d1, const dual&d2)
 	{
-		return dual(d1._value + d2._value, d1._diffs - d2._diffs);
+		return dual(d1._value - d2._value, d1._diffs - d2._diffs);
 	}
 	friend dual operator * (const dual& d1, const dual&d2)
 	{

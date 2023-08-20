@@ -20,4 +20,4 @@ automatic differential framework in C++ supporting vectors, 多变量微分自�
 
 
 # 联系
-别联系了，还很原始，我有功夫改进吧。
+别联系了，还很原始，我有功夫改进吧。 

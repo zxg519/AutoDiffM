@@ -133,7 +133,7 @@ public:
 		double value = 1;
 		if (N1 == 0)
 		{
-			return dual(0, vector<double>(x.diff_size(), 0));
+			return dual(1, vector<double>(x.diff_size(), 0));
 		}
 		else if (N1 > 0)
 		{

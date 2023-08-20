@@ -246,13 +246,14 @@ protected:
 // To do, regiteration mechanism, automatica set the diff vectors;
 //   and automatic setting the patial diff position in the vector for each variable
 /*
-class auto_variable_register
+class argument_register
 {
 public:
 	void begin_regist()
 	{
 	}
-	void regist(const string& name, const double x_value) //注册变量
+	void regist(const string& argument_name, 
+	            const double argument_value) //注册变量名字及计算偏微分时该变量的取值
 	{
 	}
 	void end_regist()
@@ -260,7 +261,7 @@ public:
 	}
 
 public:
-	dual& get_variable(const string& name)
+	dual& get_argument(const string& name)
 	{
 
 	}
@@ -315,21 +316,22 @@ int main()
 	/*
 	    // to do list
 
-		auto_variable_register reg;
+		argument_register reg;
 		reg.begin_regist();
 			reg.register("x1",2);  // x1, partial diff on x1 = 2
 			reg.register("x2",3);  // x2, partial diff on x2 = 3
 		reg.end_register();
 
-		auto x1 = reg["x1"];
-		auto x2 = reg["x2"]
+		auto& x1 = reg["x1"];
+		auto& x2 = reg["x2"]
 
 		auto y = x1*x2 + sin(x2)*log(x1);
 
 		cout<<"dy/dx1 = "<<y.get_diff(x1)<<endl;
-		cout<<"dy/dx2 = "<<y.get_diff(x2)<<endl;
+		cout<<"dy/dx1 = "<<y.get_diff(x2)<<endl;
 	
 	*/
 
 }
+
 

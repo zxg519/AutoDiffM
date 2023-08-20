@@ -327,7 +327,7 @@ int main()
 		auto y = x1*x2 + sin(x2)*log(x1);
 
 		cout<<"dy/dx1 = "<<y.get_diff(x1)<<endl;
-		cout<<"dy/dx1 = "<<y.get_diff(x2)<<endl;
+		cout<<"dy/dx2 = "<<y.get_diff(x2)<<endl;
 	
 	*/
 

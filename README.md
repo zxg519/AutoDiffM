@@ -2,7 +2,7 @@
 automatic differential framework in C++ supporting vectors, 多变量微分自动计算框架(存粹为了展示基本原理）
 
 # 功能
-支持多变量自动微分计算，极端原始的原理版本，期望改进后最终实现如下调用形式功能
+支持多变量正向自动微分计算，极端原始的原理版本，反向版本to be done.
 
 
 int main()

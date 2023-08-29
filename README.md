@@ -34,7 +34,7 @@ int main()
 	cout << "dy/dx3 = " << y.get_diff(x3) << endl;
 	cout << "dy/dx4 = " << y.get_diff(x4) << endl;
 }
-
+```
 
 # 联系
 别联系了，还很原始，我有功夫改进吧。 

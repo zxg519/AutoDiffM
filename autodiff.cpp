@@ -4,11 +4,18 @@
    School of Ins.
    Southeast University
 */
+/*
+一个支持多变量自动微分框架的原理代码， still too young too simple, sometimes naiive.
+by Zhang X.G.
+School of Ins.
+Southeast University
+*/
 #include<iostream>
 #include<cstring>
 #include <complex>
 #include <vector>
 #include <map>
+#include <fstream>
 using namespace std;
 
 using DIFFS = vector<double>;
@@ -41,26 +48,41 @@ DIFFS operator*(const double d2, const DIFFS& v1)
 	}
 	return ret;
 }
-DIFFS operator+(const DIFFS& v1, const DIFFS& v2)
+
+// 不鼓励使用 +=, -=
+DIFFS& operator+=(DIFFS& v1, const DIFFS& v2)
 {
-	DIFFS ret(v1);
-	DIFFS::iterator it1 = ret.begin();
+	DIFFS::iterator it1 = v1.begin();
 	DIFFS::const_iterator it2 = v2.begin();
-	for (; it1 != ret.end() && it2 != v2.end(); ++it1, ++it2)
+	for (; it1 != v1.end() && it2 != v2.end(); ++it1, ++it2)
 	{
 		*it1 += *it2;
 	}
+	return v1;
+}
+DIFFS& operator-=(DIFFS& v1, const DIFFS& v2)
+{	
+	DIFFS::iterator it1 = v1.begin();
+	DIFFS::const_iterator it2 = v2.begin();
+	for (; it1 != v1.end() && it2 != v2.end(); ++it1, ++it2)
+	{
+		*it1 -= *it2;
+	}
+	return v1;
+}
+
+
+
+DIFFS operator+(const DIFFS& v1, const DIFFS& v2)
+{
+	DIFFS ret(v1);
+	ret += v2;
 	return ret;
 }
 DIFFS operator-(const DIFFS& v1, const DIFFS& v2)
 {
 	DIFFS ret(v1);
-	DIFFS::iterator it1 = ret.begin();
-	DIFFS::const_iterator it2 = v2.begin();
-	for (; it1 != ret.end() && it2 != v2.end(); ++it1, ++it2)
-	{
-		*it1 -= *it2;
-	}
+	ret -= v2;
 	return ret;
 }
 
@@ -78,7 +100,8 @@ public:
 public:
 	dual(const double value = 1, const int variable_order = 0, int variable_dim = 1) :_value(value), _diffs(variable_dim, (double)0.0)
 	{
-		_diffs[variable_order] = 1;
+		if (variable_order >= 0 && variable_order<variable_dim)
+			_diffs[variable_order] = 1;
 	}
 	dual(const double value, const DIFFS& diffs) :_value(value), _diffs(diffs)
 	{
@@ -210,6 +233,13 @@ public:
 			1.0 / x._value / log(10.0)* x._diffs);
 
 	}
+public:
+	// disable this function !!!
+	dual& operator +=(const dual& d1)
+	{
+		this->_value += d1._value;
+		this->_diffs += d1._diffs;
+	}
 
 public:
 	double get_value() const
@@ -267,12 +297,13 @@ class argument_register
 public:
 	void begin_regist()
 	{
-		// clear everything!
+		// clear everything !
 		_map.clear();
 		_duals.clear();	
 	}
 	
-	bool regist(const string& argument_name, const double argument_value) //注册变量名字及计算偏微分时该变量的取值
+	bool regist(const string& argument_name,
+				const double argument_value=0) //注册变量名字及计算偏微分时该变量的取值
 	{
 		auto iter = _map.find(argument_name);
 		if (iter != _map.end()) 
@@ -303,7 +334,12 @@ public:
 			++i;
 		}
 	}
-
+public:
+	// 返回积分计算的0
+	dual zero()
+	{
+		return dual(0, -1, _duals.size());		
+	}
 public:
 	
 	dual& get_argument(const string& name)
@@ -318,15 +354,107 @@ public:
 	{
 		return _map[name];
 	}
+	
 protected:
 	vector<dual> _duals;
 	map<const string, int> _map;  //记录在数组中的下表
 };
 
 
+
+// test DR ...
+void test2()
+{
+	cout << "---------------------------------------------------------" << endl;
+	cout << "test DR and its derivatives over theta and L" << endl;
+	// a test of DR algorithm to find which will greatly affect the system performance.
+	const double PI = 3.1415926525;
+	argument_register reg1;
+	reg1.begin_regist();
+		reg1.regist("theta1", 6 * PI / 180.00);
+		reg1.regist("theta2", 6 * PI / 180.00);
+		reg1.regist("theta3", 6 * PI / 180.00);
+		reg1.regist("theta4", 6 * PI / 180.00);
+		reg1.regist("theta5", 6 * PI / 180.00);
+
+		reg1.regist("L1", 20);
+		reg1.regist("L2", 20);
+		reg1.regist("L3", 20);
+		reg1.regist("L4", 20);
+		reg1.regist("L5", 20);
+	reg1.end_regist();
+
+	dual theta[] =
+	{
+		reg1["theta0"],
+		reg1["theta1"],
+		reg1["theta2"],
+		reg1["theta3"],
+		reg1["theta4"]
+	};
+	dual L[] =
+	{
+		reg1["L0"],
+		reg1["L1"],
+		reg1["L2"],
+		reg1["L3"],
+		reg1["L4"]
+	};
+
+	dual x[] = { reg1.zero(), reg1.zero(), reg1.zero(), reg1.zero(), reg1.zero(), reg1.zero() };  // 6 data
+	dual y[] = { reg1.zero(), reg1.zero(), reg1.zero(), reg1.zero(), reg1.zero(), reg1.zero() };
+	dual alpha[] = { reg1.zero(), reg1.zero(), reg1.zero(), reg1.zero(), reg1.zero(), reg1.zero() };
+
+	int size = sizeof(theta) / sizeof(theta[0]);
+
+	// DR algorithms using difference-angle from gyro and distance(L) from odometers
+	for (int i = 0; i < size; ++i)
+	{
+		alpha[i + 1] = alpha[i] + theta[i];
+		x[i + 1] = x[i] + L[i] * cos(alpha[i + 1]);
+		y[i + 1] = y[i] + L[i] * sin(alpha[i + 1]);
+	}
+	// out alpha, x, y
+	ofstream os("d:\\111.csv");
+	for (int i = 0; i < size; ++i)
+	{
+
+		cout << x[i + 1].get_value() << ",";
+		cout << y[i + 1].get_value() << ",";
+		cout << alpha[i + 1].get_value() << endl;
+
+		os << x[i + 1].get_value() << ",";
+		os << y[i + 1].get_value() << ",";
+		os << alpha[i + 1].get_value() << endl;
+	}
+	os.clear();
+	os.close();
+	//output derivative value of x0 to L0,L1,L2,L3,L4, and theta1,theta2,theta3,theta4,theta5
+	cout << "--------------------------------------------" << endl;
+	for (int i = 0; i < size; ++i)
+	{
+		cout << "dx/d_L[" << i << "] = " << x[size].get_diff(L[i]) << endl;
+	}
+	for (int i = 0; i < size; ++i)
+	{
+		cout << "dx/d_theta[" << i << "] = " << x[size].get_diff(theta[i]) << endl;
+	}
+	cout << "--------------------------------------------" << endl;
+	for (int i = 0; i < size; ++i)
+	{
+		cout << "dy/d_L[" << i << "] = " << y[size].get_diff(L[i]) << endl;
+	}
+	for (int i = 0; i < size; ++i)
+	{
+		cout << "dy/d_theta[" << i << "] = " << y[size].get_diff(theta[i]) << endl;
+	}
+}
+
 int main()
 {
 	// sample code for calling the multi-dimensional auto-diff feature
+
+	// 1. register all variables with its name and value
 	argument_register reg;
 	reg.begin_regist();
 		reg.regist("x1", 2);  // x1, partial diff on x1 = 2
@@ -336,17 +464,20 @@ int main()
 		reg.regist("x1", 1); // already registed, it will trig a failure!!!
 	reg.end_regist();
 
+	// 2. Get the corresponding variable using its name
 	auto& x1 = reg["x1"];
 	auto& x2 = reg["x2"];
 	auto& x3 = reg["x3"];
 	auto& x4 = reg["x4"];
 
-	auto y = x1*x2*x1*x2 + sin(x2)*log_e(x1) + 2 * x3 + x4 + (x1^x4) + log_10(x1);
+	// 3. computing y and its partial derivative values on x1,x2,x3,x4
+	auto y1 = x1*x2*x1*x2 + sin(x2)*log_e(x1) + 2 * x3 + x4 + (x1^x4) + log_10(x1);
 
-	cout << "dy/dx1 = " << y.get_diff(x1) << endl;
-	cout << "dy/dx1 = " << y.get_diff(x2) << endl;
-	cout << "dy/dx3 = " << y.get_diff(x3) << endl;
-	cout << "dy/dx4 = " << y.get_diff(x4) << endl;
+	// 4. Output results
+	cout << "dy/dx1 = " << y1.get_diff(x1) << endl;
+	cout << "dy/dx1 = " << y1.get_diff(x2) << endl;
+	cout << "dy/dx3 = " << y1.get_diff(x3) << endl;
+	cout << "dy/dx4 = " << y1.get_diff(x4) << endl;
+
+	test2();
 }
-
-

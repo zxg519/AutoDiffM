@@ -36,5 +36,97 @@ int main()
 }
 ```
 
+例子2
+```cpp
+// test DR ...
+void test()
+{
+	cout << "---------------------------------------------------------" << endl;
+	cout << "test DR and its derivatives over theta and L" << endl;
+	// a test of DR algorithm to find which will greatly affect the system performance.
+	const double PI = 3.1415926525;
+	argument_register reg1;
+	reg1.begin_regist();
+		reg1.regist("theta1", 6 * PI / 180.00);
+		reg1.regist("theta2", 6 * PI / 180.00);
+		reg1.regist("theta3", 6 * PI / 180.00);
+		reg1.regist("theta4", 6 * PI / 180.00);
+		reg1.regist("theta5", 6 * PI / 180.00);
+
+		reg1.regist("L1", 20);
+		reg1.regist("L2", 20);
+		reg1.regist("L3", 20);
+		reg1.regist("L4", 20);
+		reg1.regist("L5", 20);
+	reg1.end_regist();
+
+	dual theta[] =
+	{
+		reg1["theta0"],
+		reg1["theta1"],
+		reg1["theta2"],
+		reg1["theta3"],
+		reg1["theta4"]
+	};
+	dual L[] =
+	{
+		reg1["L0"],
+		reg1["L1"],
+		reg1["L2"],
+		reg1["L3"],
+		reg1["L4"]
+	};
+
+	dual x[] = { reg1.zero(), reg1.zero(), reg1.zero(), reg1.zero(), reg1.zero(), reg1.zero() };  // 6 data
+	dual y[] = { reg1.zero(), reg1.zero(), reg1.zero(), reg1.zero(), reg1.zero(), reg1.zero() };
+	dual alpha[] = { reg1.zero(), reg1.zero(), reg1.zero(), reg1.zero(), reg1.zero(), reg1.zero() };
+
+	int size = sizeof(theta) / sizeof(theta[0]);
+
+	// DR algorithms using difference-angle from gyro and distance(L) from odometers
+	for (int i = 0; i < size; ++i)
+	{
+		alpha[i + 1] = alpha[i] + theta[i];
+		x[i + 1] = x[i] + L[i] * cos(alpha[i + 1]);
+		y[i + 1] = y[i] + L[i] * sin(alpha[i + 1]);
+	}
+	// out alpha, x, y
+	ofstream os("d:\\111.csv");
+	for (int i = 0; i < size; ++i)
+	{
+
+		cout << x[i + 1].get_value() << ",";
+		cout << y[i + 1].get_value() << ",";
+		cout << alpha[i + 1].get_value() << endl;
+
+		os << x[i + 1].get_value() << ",";
+		os << y[i + 1].get_value() << ",";
+		os << alpha[i + 1].get_value() << endl;
+	}
+	os.clear();
+	os.close();
+	//output derivative value of x0 to L0,L1,L2,L3,L4, and theta1,theta2,theta3,theta4,theta5
+	cout << "--------------------------------------------" << endl;
+	for (int i = 0; i < size; ++i)
+	{
+		cout << "dx/d_L[" << i << "] = " << x[size].get_diff(L[i]) << endl;
+	}
+	for (int i = 0; i < size; ++i)
+	{
+		cout << "dx/d_theta[" << i << "] = " << x[size].get_diff(theta[i]) << endl;
+	}
+	cout << "--------------------------------------------" << endl;
+	for (int i = 0; i < size; ++i)
+	{
+		cout << "dy/d_L[" << i << "] = " << y[size].get_diff(L[i]) << endl;
+	}
+	for (int i = 0; i < size; ++i)
+	{
+		cout << "dy/d_theta[" << i << "] = " << y[size].get_diff(theta[i]) << endl;
+	}
+}
+···
+
+
 # 联系
 别联系了，还很原始，我有功夫改进吧。 

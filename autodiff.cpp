@@ -64,9 +64,17 @@ DIFFS operator-(const DIFFS& v1, const DIFFS& v2)
 	return ret;
 }
 
-
+class argument_register;
 class dual
 {
+public:
+	/*
+	dual(const dual& d1)
+	{
+		//double      _value;  // 函数值
+		//DIFFS       _diffs;  // 偏微分列表 存储x1,x2,x3,...,xn的微分值，计算微分和计算函数值同步。
+		_value = d1._value;
+	}*/
 public:
 	dual(const double value = 1, const int variable_order = 0, int variable_dim = 1) :_value(value), _diffs(variable_dim, (double)0.0)
 	{
@@ -155,7 +163,7 @@ public:
 	friend dual pow(const dual&x1, const dual& x2) // x1^x2
 	{
 		return dual(exp(x2._value*log(x1._value)),
-			exp(x2._value*log(x1._value))*(log(x1._value)*x2._diffs + x2._value/x1._value*x1._diffs)
+			exp(x2._value*log(x1._value))*(log(x1._value)*x2._diffs + x2._value / x1._value*x1._diffs)
 			);
 	}
 
@@ -164,7 +172,7 @@ public:
 		//x ^ (1 / N) = e ^ (1 / N*log(x) )
 		return dual(exp(log(x._value) / N),
 			exp(log(x._value) / N) / N / x._value * x._diffs
-			        );
+			);
 	}
 	//==-----------------------------------------------------------------------------------------
 	friend dual operator ^ (const dual&x1, const dual& x2) // x1^x2
@@ -179,30 +187,30 @@ public:
 	{
 		// down^x= e ^ (x ln down)
 		// to do list
-		return dual(exp(x._value*log(down)), 
-			        exp(x._value*log(down))*log(down)*x._diffs);
+		return dual(exp(x._value*log(down)),
+			exp(x._value*log(down))*log(down)*x._diffs);
 	}
 	friend dual operator ^ (const dual& x, const double exponent)  //x^p
 	{
 		// down^x= e ^ (x ln down)
 		// to do list
 		return dual(exp(exponent*log(x._value)),
-			exp(exponent*log(x._value))*exponent/(x._value)*x._diffs);
+			exp(exponent*log(x._value))*exponent / (x._value)*x._diffs);
 	}
-	
+
 	friend dual log_e(const dual& d)
 	{
-		return dual(log(d._value),  
-		            1.0/d._value * d._diffs);
+		return dual(log(d._value),
+			1.0 / d._value * d._diffs);
 	}
 	friend dual log_10(const dual& x)
 	{
 		// log_10(x) = ln(x) / ln(10)
-		return dual(log(x._value)/log(10.0),
-			1.0 / x._value /log(10.0)* x._diffs);
+		return dual(log(x._value) / log(10.0),
+			1.0 / x._value / log(10.0)* x._diffs);
 
 	}
-	
+
 public:
 	double get_value() const
 	{
@@ -212,7 +220,7 @@ public:
 	{
 		return _diffs.size();
 	}
-	
+
 	double get_diff(const int variable_pos) const   // 得到第variable_pos个变量对应的偏微分值
 	{
 		return _diffs[variable_pos];
@@ -232,11 +240,19 @@ public:
 			}
 			else
 			{
-				cout << "ERROR state in line:"<<__LINE__<< endl;
+				cout << "ERROR state in line:" << __LINE__ << endl;
 				exit(0);
-			}		
+			}
 		}
 		return _diffs[pos];
+	}
+public:
+	friend class argument_register;
+protected:
+	// this interface is specially designed for class argument_register!!!
+	DIFFS &    _get_diffs()
+	{
+		return _diffs;
 	}
 protected:
 	double      _value;  // 函数值
@@ -245,93 +261,92 @@ protected:
 
 // To do, regiteration mechanism, automatica set the diff vectors;
 //   and automatic setting the patial diff position in the vector for each variable
-/*
+
 class argument_register
 {
 public:
 	void begin_regist()
 	{
+		// clear everything!
+		_map.clear();
+		_duals.clear();	
 	}
-	void regist(const string& argument_name, 
-	            const double argument_value) //注册变量名字及计算偏微分时该变量的取值
+	
+	bool regist(const string& argument_name, const double argument_value) //注册变量名字及计算偏微分时该变量的取值
 	{
+		auto iter = _map.find(argument_name);
+		if (iter != _map.end()) 
+		{
+			cout << "fail to register variable " << argument_name <<", it is already there!"<< endl;
+			return false;
+		}
+		DIFFS dfs;
+		_duals.push_back(dual(argument_value, dfs));
+		_map.insert({ argument_name, _duals.size() - 1});
+		return true;
 	}
+	
 	void end_regist()
 	{
+		// 把每个变量的标记位自动确定下来
+		int size = _duals.size();
+		int i = 0;
+		for (auto& data : _duals)
+		{
+			DIFFS& dfs = data._get_diffs();
+			dfs.resize(size);
+			for (auto& data1 : dfs)
+				data1 = 0;
+
+			// set variable pos in the diff table
+			dfs[i] = 1;
+			++i;
+		}
 	}
 
 public:
+	
 	dual& get_argument(const string& name)
 	{
-
+		return _duals[_map[name]];
 	}
 	dual& operator[](const string& name)
 	{
-	
-	}
+		return _duals[_map[name]];
+	}	
 	int  diff_pos(const string& name)
 	{
-
+		return _map[name];
 	}
 protected:
-	vector<dual> duals;
-	map<const string, dual&> duals_mapping;
+	vector<dual> _duals;
+	map<const string, int> _map;  //记录在数组中的下表
 };
-*/
+
 
 int main()
 {
-	dual x1{ 2, 0, 3 };    // 第0个变量，所以偏微分向量中第0个单元设置为1，其余单元必须设置为0
-	dual x2{ 3, 1, 3 };    // 第1个变量，所以偏微分向量中第1个单元设置为1，其余单元必须设置为0
-	dual x3{ 4, 2, 3 };    // 第2个变量，所以偏微分向量中第2个单元设置为1，其余单元必须设置为0
+	// sample code for calling the multi-dimensional auto-diff feature
+	argument_register reg;
+	reg.begin_regist();
+		reg.regist("x1", 2);  // x1, partial diff on x1 = 2
+		reg.regist("x2", 3);  // x2, partial diff on x2 = 3
+		reg.regist("x3", 0);
+		reg.regist("x4", 1);
+		reg.regist("x1", 1); // already registed, it will trig a failure!!!
+	reg.end_regist();
 
-	//dual y = 2*x1*x2*x3 + sin(x3)*cos(x3)*pow(x1, 2)/3 + 1/(x2 ^ 4);
-	dual y = x2*x3 + 1 / (x1 ^ 5);  //^优先级低，一定要加括号！
-	cout << "f(x1,x2,x3)=" << y.get_value() << endl;
-	cout << "dy/dx1=" << y.get_diff(0) << endl;
-	cout << "dy/dx2=" << y.get_diff(1) << endl;
-	cout << "dy/dx3=" << y.get_diff(2) << endl;
+	auto& x1 = reg["x1"];
+	auto& x2 = reg["x2"];
+	auto& x3 = reg["x3"];
+	auto& x4 = reg["x4"];
 
-	cout << "--------------------------------------" << endl;
-	dual x5{ 2, 0, 1}; //单变量微分
-	dual y1 = sqrt_N(x5,2);
-	cout << y1.get_value() << endl;
-	cout << "dy/dx1="<<y1.get_diff(0) << endl;
+	auto y = x1*x2*x1*x2 + sin(x2)*log_e(x1) + 2 * x3 + x4 + (x1^x4) + log_10(x1);
 
-
-	cout << "--------------------------------------" << endl;
-	dual x8{ 2, 0, 1}; //单变量微分
-	dual y3 = sqrt_N(x5, 2);
-	cout << y3.get_value() << endl;
-	cout << "dy/dx1=" << y3.get_diff(0) << endl;
-
-	cout << "--------------------------------------" << endl;
-	dual x9{ 2, 0, 2 }; //双变量微分
-	dual x10{ 2, 1, 2 }; //双变量微分
-	dual y4 = x9^x10;
-	cout << y4.get_value() << endl;
-	cout << "dy/dx1=" << y4.get_diff(0) << endl;
-	cout << "dy/dx2=" << y4.get_diff(1) << endl;
-
-	/*
-	    // to do list
-
-		argument_register reg;
-		reg.begin_regist();
-			reg.register("x1",2);  // x1, partial diff on x1 = 2
-			reg.register("x2",3);  // x2, partial diff on x2 = 3
-		reg.end_register();
-
-		auto& x1 = reg["x1"];
-		auto& x2 = reg["x2"]
-
-		auto y = x1*x2 + sin(x2)*log(x1);
-
-		cout<<"dy/dx1 = "<<y.get_diff(x1)<<endl;
-		cout<<"dy/dx1 = "<<y.get_diff(x2)<<endl;
-	
-	*/
-
+	cout << "dy/dx1 = " << y.get_diff(x1) << endl;
+	cout << "dy/dx1 = " << y.get_diff(x2) << endl;
+	cout << "dy/dx3 = " << y.get_diff(x3) << endl;
+	cout << "dy/dx4 = " << y.get_diff(x4) << endl;
 }
 
 

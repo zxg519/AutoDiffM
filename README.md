@@ -157,7 +157,26 @@ dy0/dtheta2 = 59.392
 dy0/dtheta3 = 39.5015
 dy0/dtheta4 = 19.6962
 ```
+```c++
+// example 3, supporting registering an array
+void test_array()
+{
+	cout << "---------------------------------------------------------" << endl;
+	cout << "test DR and its derivatives over theta and L" << endl;
+	// a test of DR algorithm to find which will greatly affect the system performance.
+	const double PI = 3.1415926525;
+	argument_register reg1;
+	reg1.begin_regist();
+                // register two arrays, with name theta and L
+		reg1.regist("theta", {1.0, 1.0,    2,   3,   5, -0.5});   // array theta
+		reg1.regist("L",     {10,   10, 10.5,  1.5,  0,    0});   // array L
+	reg1.end_regist();
+        vector<dual> theta = reg1["theta"];
+        vector<dual> L = reg1["L"];
 
+        // now use the arrays to compute ....
+}
+```
 
 
 # 联系

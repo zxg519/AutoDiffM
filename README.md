@@ -167,8 +167,8 @@ void test_array()
 		reg1.regist("L",     {10,   10, 10.5,  1.5,  0,    0});   // array an array with name "L"
 	reg1.end_regist();
 
-        vector<dual> theta = reg1["theta"];                              // to use array "theta"
-        vector<dual> L = reg1["L"];                                      // to use array "L"
+        vector<dual> theta = reg1("theta");                              // to use array "theta"
+        vector<dual> L = reg1("L");                                      // to use array "L"
 
         // ...
 }

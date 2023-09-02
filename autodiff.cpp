@@ -1,14 +1,8 @@
 /*
-   一个支持多变量自动微分框架的原理代码， still too young too simple, sometimes naiive.
-   by Zhang X.G.
-   School of Ins.
-   Southeast University
-*/
-/*
-一个支持多变量自动微分框架的原理代码， still too young too simple, sometimes naiive.
-by Zhang X.G.
-School of Ins.
-Southeast University
+	一个支持多变量自动微分框架的原理代码， still too young too simple, sometimes naiive.
+	by Zhang X.G.
+	School of Ins.
+	Southeast University
 */
 #include<iostream>
 #include<cstring>
@@ -276,6 +270,16 @@ public:
 		}
 		return _diffs[pos];
 	}
+	vector<double> get_diff(const vector<dual>& duals)
+	{
+		vector<double> ret;
+		for (auto& d : duals)
+		{
+			ret.push_back(get_diff(d));
+		}
+
+		return ret;
+	}
 public:
 	friend class argument_register;
 protected:
@@ -300,6 +304,10 @@ public:
 		// clear everything !
 		_map.clear();
 		_duals.clear();	
+		for (const auto& p : _map_array)
+			delete p.second; // 删除动态分配的 vector<int>*			
+		
+		_map_array.clear();
 	}
 	
 	bool regist(const string& argument_name,
@@ -314,6 +322,28 @@ public:
 		DIFFS dfs;
 		_duals.push_back(dual(argument_value, dfs));
 		_map.insert({ argument_name, _duals.size() - 1});
+		return true;
+	}
+	bool regist(const string& argument_name,
+	         	const vector<double>& init_datas)
+	{
+		auto iter = _map_array.find(argument_name);
+		if (iter != _map_array.end())
+		{
+			cout << "fail to register variable " << argument_name << ", it is already there!" << endl;
+			return false;
+		}
+
+		// 我们允许单变量和数组同名，因为分别通过不同接口得到dual变量的
+		vector<int>* pv = new vector<int>;
+		DIFFS dfs;
+		for (auto& data : init_datas)
+		{
+			_duals.push_back(dual(data, dfs));
+			int order = _duals.size() - 1;
+			pv->push_back(order);
+		}
+		_map_array.insert( {argument_name, pv} );
 		return true;
 	}
 	
@@ -341,7 +371,7 @@ public:
 		return dual(0, -1, _duals.size());		
 	}
 public:
-	
+	// 单变量接口
 	dual& get_argument(const string& name)
 	{
 		return _duals[_map[name]];
@@ -354,16 +384,80 @@ public:
 	{
 		return _map[name];
 	}
+	// 数组接口
+	vector<dual> get_argument_array(const string& name)
+	{
+		auto iter = _map_array.find(name);
+		if (iter == _map_array.end())
+		{
+			cout << "unregistered array " << name << "[], cannot find it!" << endl;
+			return vector<dual>();
+		}
+
+		vector<dual> v;
+		for (auto& pos : *_map_array[name])
+			v.push_back(_duals[pos]);
+
+		return v;
+	}
+	inline vector<dual> operator()(const string& name)
+	{
+		return get_argument_array(name);
+	}
 	
 protected:
 	vector<dual> _duals;
 	map<const string, int> _map;  //记录在数组中的下表
+	map<const string, vector<int>*> _map_array;
 };
 
 
 
+
+/*
+	test array
+*/
+void test_1()
+{
+	// sample code for calling the multi-dimensional auto-diff feature
+
+	// 1. register all variables with its name and value
+	argument_register reg;
+	reg.begin_regist();
+		reg.regist("x1", 2);  // x1, partial diff on x1 = 2
+		reg.regist("x2", 3);  // x2, partial diff on x2 = 3
+		reg.regist("x3", 0);
+		reg.regist("x4", 1);
+		reg.regist("x1", 1); // already registed, it will trig a failure!!!
+	reg.end_regist();
+
+	// 2. get the corresponding variable using its name
+	auto& x1 = reg["x1"];
+	auto& x2 = reg["x2"];
+	auto& x3 = reg["x3"];
+	auto& x4 = reg["x4"];
+
+	// 3. computing y and its parital dirivative values on x1,x2,x3,x4
+	auto y1 = x1*x2*x1*x2 + sin(x2)*log_e(x1) + 2 * x3 + x4 + (x1^x4) + log_10(x1);
+
+	// 4. output results
+	cout << "dy/dx1 = " << y1.get_diff(x1) << endl;
+	cout << "dy/dx1 = " << y1.get_diff(x2) << endl;
+	cout << "dy/dx3 = " << y1.get_diff(x3) << endl;
+	cout << "dy/dx4 = " << y1.get_diff(x4) << endl;
+	/*
+	   output:
+		   dy/dx1 = 37.2877
+		   dy/dx1 = 23.3138
+		   dy/dx3 = 2
+		   dy/dx4 = 2.38629
+	
+	*/
+}
+
+
 // test DR ...
-void test2()
+void test_array1()
 {
 	cout << "---------------------------------------------------------" << endl;
 	cout << "test DR and its derivatives over theta and L" << endl;
@@ -376,7 +470,7 @@ void test2()
 		reg1.regist("theta3", 6 * PI / 180.00);
 		reg1.regist("theta4", 6 * PI / 180.00);
 		reg1.regist("theta5", 6 * PI / 180.00);
-
+	
 		reg1.regist("L1", 20);
 		reg1.regist("L2", 20);
 		reg1.regist("L3", 20);
@@ -450,34 +544,57 @@ void test2()
 	}
 }
 
-int main()
+/*
+test real array
+*/
+void test_array2()
 {
-	// sample code for calling the multi-dimensional auto-diff feature
-
-	// 1. register all variables with its name and value
+	cout << "-------------------test real array --------------------" << endl;
 	argument_register reg;
 	reg.begin_regist();
-		reg.regist("x1", 2);  // x1, partial diff on x1 = 2
-		reg.regist("x2", 3);  // x2, partial diff on x2 = 3
-		reg.regist("x3", 0);
-		reg.regist("x4", 1);
-		reg.regist("x1", 1); // already registed, it will trig a failure!!!
+		reg.regist("x", 1.5);
+		reg.regist("hello", { 1, 2, 3, 4, 1 });
 	reg.end_regist();
 
-	// 2. Get the corresponding variable using its name
-	auto& x1 = reg["x1"];
-	auto& x2 = reg["x2"];
-	auto& x3 = reg["x3"];
-	auto& x4 = reg["x4"];
+	auto x = reg["x"];
+	vector<dual> hellos = reg("hello");   // use [] to get singla variables, and () for array
 
-	// 3. computing y and its partial derivative values on x1,x2,x3,x4
-	auto y1 = x1*x2*x1*x2 + sin(x2)*log_e(x1) + 2 * x3 + x4 + (x1^x4) + log_10(x1);
+	auto y = hellos[0] * hellos[1] + sin(hellos[3]) + (x ^ 2);
 
-	// 4. Output results
-	cout << "dy/dx1 = " << y1.get_diff(x1) << endl;
-	cout << "dy/dx1 = " << y1.get_diff(x2) << endl;
-	cout << "dy/dx3 = " << y1.get_diff(x3) << endl;
-	cout << "dy/dx4 = " << y1.get_diff(x4) << endl;
+	auto diffs = y.get_diff(hellos);
+	int i = 0;
+	for (auto& diff : diffs)
+	{
+		cout << "dy/d_hello[" << i << "] = " << diff << endl;
+		++i;
+	}
+	cout << "dy/dx=" << y.get_diff(x) << endl;
+	/*
+	output:
+	------------------- test2 --------------------
+	dy/d_hello[0] = 2
+	dy/d_hello[1] = 1
+	dy/d_hello[2] = 0
+	dy/d_hello[3] = -0.653644
+	dy/d_hello[4] = 0
+	dy/dx=3
 
-	test2();
+	*/
+}
+
+int main()
+{
+	// test with registering single-variables
+	cout << "--------3. test with registering single variable -- -----------" << endl;
+	test_1();
+
+	// test with registering single-variable, and combining array 
+	cout << "--------3. test with registering single variable and combining array-- -----------" << endl;
+	test_array1();
+
+	// test with registering array
+	cout << "--------3. test with registering array-- -----------" << endl;
+	test_array2();
+	
+	cout << "---------- end -----------" << endl;
 }

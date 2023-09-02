@@ -542,6 +542,39 @@ void test_array1()
 	{
 		cout << "dy/d_theta[" << i << "] = " << y[size].get_diff(theta[i]) << endl;
 	}
+
+	/*
+        output:
+	---------------------------------------------------------
+		test DR and its derivatives over theta and L
+		0.104146,0.0109462,0.10472
+		19.6671,4.16918,0.20944
+		38.6882,10.3495,0.314159
+		56.9591,18.4843,0.418879
+		74.2796,28.4843,0.523599
+		--------------------------------------------
+		dx/d_L[0] = -55.963
+		dx/d_L[1] = 0.978148
+		dx/d_L[2] = 0.951057
+		dx/d_L[3] = 0.913545
+		dx/d_L[4] = 0.866025
+		dx/d_theta[0] = -55.963
+		dx/d_theta[1] = -55.963
+		dx/d_theta[2] = -24.3151
+		dx/d_theta[3] = -18.1347
+		dx/d_theta[4] = -10
+		--------------------------------------------
+		dy/d_L[0] = 148.56
+		dy/d_L[1] = 0.207912
+		dy/d_L[2] = 0.309017
+		dy/d_L[3] = 0.406737
+		dy/d_L[4] = 0.5
+		dy/d_theta[0] = 148.56
+		dy/d_theta[1] = 148.56
+		dy/d_theta[2] = 54.6125
+		dy/d_theta[3] = 35.5914
+		dy/d_theta[4] = 17.3205
+        */
 }
 
 /*
@@ -572,12 +605,12 @@ void test_array2()
 	/*
 	output:
 	------------------- test2 --------------------
-	dy/d_hello[0] = 2
-	dy/d_hello[1] = 1
-	dy/d_hello[2] = 0
-	dy/d_hello[3] = -0.653644
-	dy/d_hello[4] = 0
-	dy/dx=3
+		dy/d_hello[0] = 2
+		dy/d_hello[1] = 1
+		dy/d_hello[2] = 0
+		dy/d_hello[3] = -0.653644
+		dy/d_hello[4] = 0
+		dy/dx=3
 
 	*/
 }
@@ -585,16 +618,14 @@ void test_array2()
 int main()
 {
 	// test with registering single-variables
-	cout << "--------3. test with registering single variable -- -----------" << endl;
+	cout << "--------1. test with registering single variable -- -----------" << endl;
 	test_1();
 
 	// test with registering single-variable, and combining array 
-	cout << "--------3. test with registering single variable and combining array-- -----------" << endl;
+	cout << "--------2. test with registering single variable and combining array-- -----------" << endl;
 	test_array1();
 
 	// test with registering array
 	cout << "--------3. test with registering array-- -----------" << endl;
 	test_array2();
-	
-	cout << "---------- end -----------" << endl;
 }

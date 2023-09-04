@@ -173,6 +173,36 @@ void test_array()
         // ...
 }
 ```
+``` c++
+// sample code for finding the solution of the given function using newton's iterative method
+using fun = std::function<dual(const dual&)>;
+double resolve_newton(fun f, const double x_init, const double max_error = 1E-6)
+{
+	argument_register reg;
+	reg.begin_regist();
+		reg.regist("x",x_init);
+	reg.end_regist();
+	
+	auto x = reg["x"];
+	auto y = x;
+	do
+	{
+		y = f(x);
+		auto x1 = x.data() - y.data() / (d(y)/d(x));
+		x.set_data(x1);
+	} while (std::abs(y.data()) > max_error);
+	return  x.data();	
+}
+
+
+int main()
+{
+	test5();
+	cout<<"the root = "<<resolve_newton([](const dual& x)->dual{return x*x-sqrt_N(x,2)-2;}, 10)<<endl;
+	
+}
+
+```
 
 
 # 联系
